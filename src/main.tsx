@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import RecipeBook from './RecipeBook.tsx'
 import RecipePage from './RecipePage.tsx'
+import PasswordGate from './PasswordGate.tsx'
 
 const path = window.location.pathname;
 
@@ -17,6 +18,8 @@ if (recipeMatch) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Page {...pageProps} />
+    <PasswordGate>
+      <Page {...pageProps} />
+    </PasswordGate>
   </StrictMode>,
 )

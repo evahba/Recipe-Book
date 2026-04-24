@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMenuStore, type MenuItem } from './store/useMenuStore';
 import { cn } from './lib/utils';
 import { BookOpen, Search, X } from 'lucide-react';

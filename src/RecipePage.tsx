@@ -47,6 +47,9 @@ export default function RecipePage({ code }: { code: string }) {
   }) : [];
 
   const allIngredients = recipe?.sections?.flatMap(s => s.ingredients || []) || [];
+  const allQuantityKeys = [...new Set(allIngredients.flatMap(ing => Object.keys(ing.quantities || {})))];
+  const effectiveBatches = batches.length > 0 ? batches : allQuantityKeys;
+
   const filteredIngredients = allIngredients.filter(ing => {
     if (!ing.quantities) return true;
     const vals = Object.values(ing.quantities || {});
@@ -114,7 +117,7 @@ export default function RecipePage({ code }: { code: string }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               <StatCard icon={<Thermometer className="w-5 h-5 text-emerald-500" />} value={`${recipe.cookTempF || '--'}°F`} label="Cook Temp" />
               <StatCard icon={<Thermometer className="w-5 h-5 text-amber-500" />} value={`${recipe.holdTempF || '--'}°F`} label="Hold Temp" />
-              {batches.map(b => {
+              {effectiveBatches.map(b => {
                 const servings = recipe.servingsPerBatch?.[b];
                 if (!servings) return null;
                 const batchLabel = b === 'C' || b === 'Catering' ? 'Catering' : `Batch ${b}`;
@@ -137,7 +140,7 @@ export default function RecipePage({ code }: { code: string }) {
                   <thead>
                     <tr className="bg-slate-50">
                       <th className="sticky left-0 bg-slate-50 p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 z-10">Ingredient</th>
-                      {batches.map(b => (
+                      {effectiveBatches.map(b => (
                         <th key={b} className="p-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                           {b === 'C' || b === 'Catering' ? 'Catering' : `Batch ${b}`}
                         </th>
@@ -151,7 +154,7 @@ export default function RecipePage({ code }: { code: string }) {
                           <div className="text-xs font-bold text-slate-700 whitespace-nowrap">{ing.name}</div>
                           <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">{ing.unit}</div>
                         </td>
-                        {batches.map(b => (
+                        {effectiveBatches.map(b => (
                           <td key={b} className="p-6 text-center font-mono text-xs text-slate-500">
                             {ing.quantities?.[b] || '-'}
                           </td>

@@ -135,39 +135,107 @@ export default function RecipePage({ code }: { code: string }) {
             {/* Ingredients */}
             <section className="space-y-5">
               <SectionDivider label="Ingredients" color="blue" />
-              <div className="rounded-[32px] border border-slate-200 bg-white overflow-x-auto shadow-sm">
-                <table className="min-w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50">
-                      <th className="sticky left-0 bg-slate-50 p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 z-10">Ingredient</th>
-                      {effectiveBatches.map(b => (
-                        <th key={b} className="p-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                          {b === 'C' || b === 'Catering' ? 'Catering' : `Batch ${b}`}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredIngredients.map((ing, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="sticky left-0 bg-white p-6 z-10">
-                          <div className="text-xs font-bold text-slate-700 whitespace-nowrap">{ing.name}</div>
-                          <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">{ing.unit}</div>
-                        </td>
+              {recipe.sections && recipe.sections.length > 1 && recipe.sections.some(s => s.name) ? (
+                <div className="space-y-8">
+                  {recipe.sections.map((section, sIdx) => {
+                    const sIngredients = (section.ingredients || []).filter(ing => {
+                      if (!ing.quantities) return true;
+                      const vals = Object.values(ing.quantities || {});
+                      return vals.length > 0 && vals.some(q => q !== '-' && q !== '' && q !== '0' && q !== null);
+                    });
+                    if (sIngredients.length === 0) return null;
+                    const sQtyKeys = [...new Set(sIngredients.flatMap(ing => Object.keys(ing.quantities || {})))];
+                    const sBatches = batches.length > 0 ? batches.filter(b => sIngredients.some(ing => ing.quantities?.[b])) : sQtyKeys;
+                    const sSteps = (recipe.steps || []).filter(s => s.section === section.name);
+                    return (
+                      <div key={sIdx} className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-black shrink-0">{sIdx + 1}</span>
+                          <h4 className="text-sm font-black uppercase tracking-widest text-slate-700">{section.name}</h4>
+                        </div>
+                        <div className={cn('flex flex-col gap-6', sSteps.length > 0 ? 'lg:flex-row lg:items-start' : '')}>
+                          <div className="rounded-[32px] border border-slate-200 bg-white overflow-x-auto shadow-sm lg:flex-1">
+                            <table className="min-w-full text-left border-collapse">
+                              <thead>
+                                <tr className="bg-slate-50">
+                                  <th className="sticky left-0 bg-slate-50 p-5 text-[10px] font-black uppercase tracking-widest text-slate-400 z-10">Ingredient</th>
+                                  {sBatches.map(b => (
+                                    <th key={b} className="p-5 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                      {b === 'C' || b === 'Catering' ? 'Catering' : b === 'Default' ? 'Amount' : `Batch ${b}`}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {sIngredients.map((ing, i) => (
+                                  <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="sticky left-0 bg-white p-5 z-10">
+                                      <div className="text-xs font-bold text-slate-700 whitespace-nowrap">{ing.name}</div>
+                                      <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">{ing.unit}</div>
+                                    </td>
+                                    {sBatches.map(b => (
+                                      <td key={b} className="p-5 text-center font-mono text-xs text-slate-500">
+                                        {ing.quantities?.[b] || '-'}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          {sSteps.length > 0 && (
+                            <div className="lg:w-72 shrink-0 p-6 rounded-[32px] bg-slate-50 border border-slate-100 space-y-4">
+                              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Directions</div>
+                              <ol className="space-y-3">
+                                {sSteps.map((step, i) => (
+                                  <li key={i} className="flex gap-3">
+                                    <span className="shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black mt-0.5">{step.n}</span>
+                                    <span className="text-xs text-slate-600 leading-relaxed">{step.text}</span>
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-[32px] border border-slate-200 bg-white overflow-x-auto shadow-sm">
+                  <table className="min-w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50">
+                        <th className="sticky left-0 bg-slate-50 p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 z-10">Ingredient</th>
                         {effectiveBatches.map(b => (
-                          <td key={b} className="p-6 text-center font-mono text-xs text-slate-500">
-                            {ing.quantities?.[b] || '-'}
-                          </td>
+                          <th key={b} className="p-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            {b === 'C' || b === 'Catering' ? 'Catering' : b === 'Default' ? 'Amount' : `Batch ${b}`}
+                          </th>
                         ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredIngredients.map((ing, i) => (
+                        <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="sticky left-0 bg-white p-6 z-10">
+                            <div className="text-xs font-bold text-slate-700 whitespace-nowrap">{ing.name}</div>
+                            <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">{ing.unit}</div>
+                          </td>
+                          {effectiveBatches.map(b => (
+                            <td key={b} className="p-6 text-center font-mono text-xs text-slate-500">
+                              {ing.quantities?.[b] || '-'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </section>
 
             {/* Execution Steps */}
-            {recipe.steps && recipe.steps.length > 0 && (
+            {recipe.steps && recipe.steps.length > 0 && !(recipe.sections && recipe.sections.length > 1 && recipe.sections.some(s => s.name)) && (
               <section className="space-y-6">
                 <SectionDivider label="Execution Steps" color="blue" />
                 <div className="relative pl-12 space-y-3">

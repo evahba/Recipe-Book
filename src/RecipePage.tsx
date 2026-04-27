@@ -88,7 +88,6 @@ export default function RecipePage({ code }: { code: string }) {
             <h2 className="text-3xl font-black uppercase tracking-tight text-slate-900">{item.title}</h2>
             <div className="flex flex-wrap gap-2">
               <Pill label={item.code} />
-              <Pill label={item.station} />
 
             </div>
             {item.ingredients && item.ingredients.length > 0 && (

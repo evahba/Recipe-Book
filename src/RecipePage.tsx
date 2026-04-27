@@ -114,8 +114,8 @@ export default function RecipePage({ code }: { code: string }) {
           <>
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              <StatCard icon={<Thermometer className="w-5 h-5 text-emerald-500" />} value={`${recipe.cookTempF || '--'}°F`} label="Cook Temp" />
-              <StatCard icon={<Thermometer className="w-5 h-5 text-amber-500" />} value={`${recipe.holdTempF || '--'}°F`} label="Hold Temp" />
+              {!/^S/i.test(item.code) && <StatCard icon={<Thermometer className="w-5 h-5 text-emerald-500" />} value={`${recipe.cookTempF || '--'}°F`} label="Cook Temp" />}
+              {!/^S/i.test(item.code) && <StatCard icon={<Thermometer className="w-5 h-5 text-amber-500" />} value={`${recipe.holdTempF || '--'}°F`} label="Hold Temp" />}
               {effectiveBatches.map(b => {
                 const servings = recipe.servingsPerBatch?.[b];
                 if (!servings) return null;

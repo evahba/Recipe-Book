@@ -89,7 +89,7 @@ export default function RecipePage({ code }: { code: string }) {
             <div className="flex flex-wrap gap-2">
               <Pill label={item.code} />
               <Pill label={item.station} />
-              {!item.enabled && <Pill label="Disabled" color="red" />}
+
             </div>
             {item.ingredients && item.ingredients.length > 0 && (
               <p className="text-xs text-slate-500 font-medium leading-relaxed">{item.ingredients.join(' · ')}</p>

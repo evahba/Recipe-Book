@@ -129,16 +129,9 @@ export default function RecipeBook() {
           </section>
         ))}
 
-        <section className="opacity-40 pointer-events-none select-none">
-          <SectionHeader label="Other" />
-          <div className="mt-6 h-24 rounded-[24px] border-2 border-dashed border-slate-300 flex items-center justify-center">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Coming soon</p>
-          </div>
-        </section>
-
         {otherItems.length > 0 && (
           <section>
-            <SectionHeader label="Uncategorized" />
+            <SectionHeader label="Other" />
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-6">
               {otherItems.map(item => (
                 <ItemCard key={item.id} item={item} onClick={() => openItem(item)} />

@@ -12,7 +12,7 @@ const ENTREE_SUBS: { label: string; match: (item: MenuItem) => boolean }[] = [
 const TOP_CATEGORIES: { label: string; match: (item: MenuItem) => boolean }[] = [
   { label: 'Appetizers',     match: i => /^E/i.test(i.code) },
   { label: 'Sides',          match: i => /^[MRV]/i.test(i.code) && i.code !== 'VSM' },
-  { label: 'Cooking Sauces', match: i => /^S/i.test(i.code) || i.code === 'VSM' || i.code === 'CRCP' },
+  { label: 'Cooking Sauces', match: i => /^S/i.test(i.code) || i.code === 'VSM' || i.code === 'CRCP' || i.code === 'BRM' },
 ];
 
 const isEntree = (i: MenuItem) => ENTREE_SUBS.some(s => s.match(i));

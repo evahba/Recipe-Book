@@ -3,6 +3,9 @@ import { useMenuStore, type MenuItem, type RecipeData } from './store/useMenuSto
 import { cn } from './lib/utils';
 import { ArrowLeft, Book, Thermometer, CheckCircle2, XCircle, Timer } from 'lucide-react';
 
+const SAUCE_CODES = new Set(['VSM', 'CRCP', 'BRM']);
+const isSauce = (code: string) => /^S/i.test(code) || SAUCE_CODES.has(code);
+
 export default function RecipePage({ code }: { code: string }) {
   const { items: allItems, fetchAll } = useMenuStore();
   const [item, setItem] = useState<MenuItem | null>(null);
@@ -114,8 +117,8 @@ export default function RecipePage({ code }: { code: string }) {
           <>
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {!/^S/i.test(item.code) && item.code !== 'VSM' && item.code !== 'CRCP' && item.code !== 'BRM' && <StatCard icon={<Thermometer className="w-5 h-5 text-emerald-500" />} value={`${recipe.cookTempF || '--'}°F`} label="Cook Temp" />}
-              {!/^S/i.test(item.code) && item.code !== 'VSM' && item.code !== 'CRCP' && item.code !== 'BRM' && <StatCard icon={<Thermometer className="w-5 h-5 text-amber-500" />} value={`${recipe.holdTempF || '--'}°F`} label="Hold Temp" />}
+              {!isSauce(item.code) && <StatCard icon={<Thermometer className="w-5 h-5 text-emerald-500" />} value={`${recipe.cookTempF || '--'}°F`} label="Cook Temp" />}
+              {!isSauce(item.code) && <StatCard icon={<Thermometer className="w-5 h-5 text-amber-500" />} value={`${recipe.holdTempF || '--'}°F`} label="Hold Temp" />}
               {effectiveBatches.map(b => {
                 const servings = recipe.servingsPerBatch?.[b];
                 if (!servings) return null;

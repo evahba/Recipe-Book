@@ -3,16 +3,18 @@ import { useMenuStore, type MenuItem } from './store/useMenuStore';
 import { cn } from './lib/utils';
 import { BookOpen, Search, X } from 'lucide-react';
 
+const SAUCE_CODES = new Set(['VSM', 'CRCP', 'BRM']);
+
 const ENTREE_SUBS: { label: string; match: (item: MenuItem) => boolean }[] = [
-  { label: 'Chicken', match: i => /^C/i.test(i.code) },
-  { label: 'Beef',    match: i => /^B/i.test(i.code) },
-  { label: 'Seafood', match: i => /^F/i.test(i.code) },
+  { label: 'Chicken', match: i => /^C/i.test(i.code) && !SAUCE_CODES.has(i.code) },
+  { label: 'Beef',    match: i => /^B/i.test(i.code) && !SAUCE_CODES.has(i.code) },
+  { label: 'Seafood', match: i => /^F/i.test(i.code) && !SAUCE_CODES.has(i.code) },
 ];
 
 const TOP_CATEGORIES: { label: string; match: (item: MenuItem) => boolean }[] = [
   { label: 'Appetizers',     match: i => /^E/i.test(i.code) },
   { label: 'Sides',          match: i => /^[MRV]/i.test(i.code) && i.code !== 'VSM' },
-  { label: 'Cooking Sauces', match: i => /^S/i.test(i.code) || i.code === 'VSM' || i.code === 'CRCP' || i.code === 'BRM' },
+  { label: 'Cooking Sauces', match: i => /^S/i.test(i.code) || SAUCE_CODES.has(i.code) },
 ];
 
 const isEntree = (i: MenuItem) => ENTREE_SUBS.some(s => s.match(i));

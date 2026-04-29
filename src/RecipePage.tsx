@@ -104,6 +104,25 @@ export default function RecipePage({ code }: { code: string }) {
                 ))}
               </div>
             )}
+            {item.nutrition && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {item.nutrition.serving_size_oz != null && (
+                  <NutritionPill label="Serving" value={`${item.nutrition.serving_size_oz} oz`} />
+                )}
+                {item.nutrition.calories_kcal != null && (
+                  <NutritionPill label="Calories" value={`${item.nutrition.calories_kcal} kcal`} highlight />
+                )}
+                {item.nutrition.protein_g != null && (
+                  <NutritionPill label="Protein" value={`${item.nutrition.protein_g}g`} />
+                )}
+                {item.nutrition.carbohydrate_g != null && (
+                  <NutritionPill label="Carbs" value={`${item.nutrition.carbohydrate_g}g`} />
+                )}
+                {item.nutrition.saturated_fat_g != null && (
+                  <NutritionPill label="Sat. Fat" value={`${item.nutrition.saturated_fat_g}g`} />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -496,6 +515,20 @@ function Pill({ label, color = 'slate' }: { label: string; color?: 'slate' | 're
       'px-2 py-0.5 rounded-md border text-[10px] font-black uppercase tracking-widest',
       color === 'red' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-slate-100 border-slate-200 text-slate-600'
     )}>{label}</span>
+  );
+}
+
+function NutritionPill({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={cn(
+      'flex flex-col items-center px-3 py-1.5 rounded-xl border',
+      highlight
+        ? 'bg-amber-50 border-amber-200'
+        : 'bg-slate-50 border-slate-200'
+    )}>
+      <span className={cn('text-[8px] font-black uppercase tracking-widest', highlight ? 'text-amber-500' : 'text-slate-400')}>{label}</span>
+      <span className={cn('text-xs font-black font-mono', highlight ? 'text-amber-700' : 'text-slate-700')}>{value}</span>
+    </div>
   );
 }
 

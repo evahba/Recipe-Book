@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useMenuStore, type MenuItem, type RecipeData } from './store/useMenuStore';
 import { cn } from './lib/utils';
 import { ArrowLeft, ArrowRight, Book, Thermometer, CheckCircle2, XCircle, Timer } from 'lucide-react';
+import { FadeImage } from './components/FadeImage';
 
 const SAUCE_CODES = new Set(['VSM', 'CRCP', 'BRM']);
 const isSauce = (code: string) => /^S/i.test(code) || SAUCE_CODES.has(code);
@@ -31,7 +32,10 @@ export default function RecipePage({ code }: { code: string }) {
 
   useEffect(() => {
     const found = allItems.find(i => i.code.toLowerCase() === code.toLowerCase());
-    if (found) setItem(found);
+    if (found) {
+      setItem(found);
+      document.title = `${found.title} | PX Recipe Book`;
+    }
   }, [allItems, code]);
 
   if (loading) {
@@ -67,6 +71,14 @@ export default function RecipePage({ code }: { code: string }) {
   const allIngredients = recipe?.sections?.flatMap(s => s.ingredients || []) || [];
   const allQuantityKeys = [...new Set(allIngredients.flatMap(ing => Object.keys(ing.quantities || {})))];
   const effectiveBatches = batches.length > 0 ? batches : allQuantityKeys;
+
+  const [selectedBatch, setSelectedBatch] = useState<string>(() => effectiveBatches[0] ?? '');
+
+  useEffect(() => {
+    if (effectiveBatches.length > 0 && !effectiveBatches.includes(selectedBatch)) {
+      setSelectedBatch(effectiveBatches[0]);
+    }
+  }, [effectiveBatches.join(',')]);
 
   const filteredIngredients = allIngredients.filter(ing => {
     if (!ing.quantities) return true;
@@ -167,7 +179,30 @@ export default function RecipePage({ code }: { code: string }) {
 
             {/* Ingredients */}
             <section className="space-y-5">
-              <SectionDivider label="Ingredients" color="blue" />
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <SectionDivider label="Ingredients" color="blue" />
+              </div>
+              {effectiveBatches.length > 1 && (
+                <div className="flex gap-2 flex-wrap">
+                  {effectiveBatches.map(b => {
+                    const label = b === 'C' || b === 'Catering' ? 'Catering' : b === 'Default' ? 'Default' : `Batch ${b}`;
+                    return (
+                      <button
+                        key={b}
+                        onClick={() => setSelectedBatch(b)}
+                        className={cn(
+                          'px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all',
+                          selectedBatch === b
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600'
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {recipe.sections && recipe.sections.length > 1 && recipe.sections.some(s => s.name) ? (
                 <div className="space-y-8">
                   {recipe.sections.map((section, sIdx) => {
@@ -177,8 +212,6 @@ export default function RecipePage({ code }: { code: string }) {
                       return vals.length > 0 && vals.some(q => q !== '-' && q !== '' && q !== '0' && q !== null);
                     });
                     if (sIngredients.length === 0) return null;
-                    const sQtyKeys = [...new Set(sIngredients.flatMap(ing => Object.keys(ing.quantities || {})))];
-                    const sBatches = batches.length > 0 ? batches.filter(b => sIngredients.some(ing => ing.quantities?.[b])) : sQtyKeys;
                     const sSteps = (recipe.steps || []).filter(s => s.section === section.name);
                     return (
                       <div key={sIdx} className="space-y-4">
@@ -192,11 +225,9 @@ export default function RecipePage({ code }: { code: string }) {
                               <thead>
                                 <tr className="bg-slate-50">
                                   <th className="sticky left-0 bg-slate-50 p-5 text-[10px] font-black uppercase tracking-widest text-slate-400 z-10">Ingredient</th>
-                                  {sBatches.map(b => (
-                                    <th key={b} className="p-5 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                      {b === 'C' || b === 'Catering' ? 'Catering' : b === 'Default' ? 'Amount' : `Batch ${b}`}
-                                    </th>
-                                  ))}
+                                  <th className="p-5 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    {selectedBatch === 'C' || selectedBatch === 'Catering' ? 'Catering' : selectedBatch === 'Default' ? 'Amount' : `Batch ${selectedBatch}`}
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -206,11 +237,9 @@ export default function RecipePage({ code }: { code: string }) {
                                       <div className="text-xs font-bold text-slate-700 whitespace-nowrap">{ing.name}</div>
                                       <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">{ing.unit}</div>
                                     </td>
-                                    {sBatches.map(b => (
-                                      <td key={b} className="p-5 text-center font-mono text-xs text-slate-500">
-                                        {ing.quantities?.[b] || '-'}
-                                      </td>
-                                    ))}
+                                    <td className="p-5 text-center font-mono text-xs text-slate-500">
+                                      {ing.quantities?.[selectedBatch] || '-'}
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -240,11 +269,9 @@ export default function RecipePage({ code }: { code: string }) {
                     <thead>
                       <tr className="bg-slate-50">
                         <th className="sticky left-0 bg-slate-50 p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 z-10">Ingredient</th>
-                        {effectiveBatches.map(b => (
-                          <th key={b} className="p-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            {b === 'C' || b === 'Catering' ? 'Catering' : b === 'Default' ? 'Amount' : `Batch ${b}`}
-                          </th>
-                        ))}
+                        <th className="p-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          {selectedBatch === 'C' || selectedBatch === 'Catering' ? 'Catering' : selectedBatch === 'Default' ? 'Amount' : `Batch ${selectedBatch}`}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -254,11 +281,9 @@ export default function RecipePage({ code }: { code: string }) {
                             <div className="text-xs font-bold text-slate-700 whitespace-nowrap">{ing.name}</div>
                             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">{ing.unit}</div>
                           </td>
-                          {effectiveBatches.map(b => (
-                            <td key={b} className="p-6 text-center font-mono text-xs text-slate-500">
-                              {ing.quantities?.[b] || '-'}
-                            </td>
-                          ))}
+                          <td className="p-6 text-center font-mono text-xs text-slate-500">
+                            {ing.quantities?.[selectedBatch] || '-'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -527,27 +552,6 @@ export default function RecipePage({ code }: { code: string }) {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function FadeImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <div className="relative w-full h-full">
-      {!loaded && (
-        <div className="absolute inset-0 bg-slate-200 animate-pulse" />
-      )}
-      <img
-        src={src}
-        alt={alt}
-        className={cn(className, 'transition-opacity duration-500', loaded ? 'opacity-100' : 'opacity-0')}
-        onLoad={() => setLoaded(true)}
-        onError={e => {
-          (e.target as HTMLImageElement).src = 'https://placehold.co/400x400/f8fafc/cbd5e1?text=No+Image';
-          setLoaded(true);
-        }}
-      />
     </div>
   );
 }

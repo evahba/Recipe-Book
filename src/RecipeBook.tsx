@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMenuStore, type MenuItem } from './store/useMenuStore';
 import { cn } from './lib/utils';
 import { AlertTriangle, BookOpen, Search, X } from 'lucide-react';
+import { FadeImage } from './components/FadeImage';
 
 const SAUCE_CODES = new Set(['VSM', 'CRCP', 'BRM']);
 
@@ -33,12 +34,33 @@ const COLOR_MAP: Record<string, string> = {
   amber:  'bg-amber-50 border-amber-200 text-amber-700',
 };
 
+const SS_SEARCH = 'rb_search';
+const SS_ALLERGENS = 'rb_allergens';
+const SS_SCROLL = 'rb_scroll';
+
 export default function RecipeBook() {
   const { items: allItems, fetchAll, loading, error } = useMenuStore();
-  const [search, setSearch] = useState('');
-  const [excludedAllergens, setExcludedAllergens] = useState<Set<string>>(new Set());
+  const [search, setSearchRaw] = useState(() => sessionStorage.getItem(SS_SEARCH) ?? '');
+  const [excludedAllergens, setExcludedAllergensRaw] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(sessionStorage.getItem(SS_ALLERGENS) ?? '[]')); }
+    catch { return new Set(); }
+  });
 
-  useEffect(() => { fetchAll(); }, []);
+  const setSearch = (v: string) => { setSearchRaw(v); sessionStorage.setItem(SS_SEARCH, v); };
+  const setExcludedAllergens = (fn: (prev: Set<string>) => Set<string>) => {
+    setExcludedAllergensRaw(prev => {
+      const next = fn(prev);
+      sessionStorage.setItem(SS_ALLERGENS, JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    fetchAll().then(() => {
+      const y = Number(sessionStorage.getItem(SS_SCROLL) ?? 0);
+      if (y) { requestAnimationFrame(() => window.scrollTo({ top: y })); }
+    });
+  }, []);
 
   const allAllergens = useMemo(() => {
     const set = new Set<string>();
@@ -79,6 +101,7 @@ export default function RecipeBook() {
   const otherItems = filtered.filter(i => !isKnown(i));
 
   function openItem(item: MenuItem) {
+    sessionStorage.setItem(SS_SCROLL, String(window.scrollY));
     window.location.href = `/recipes/${item.code}`;
   }
 
@@ -238,11 +261,10 @@ function ItemCard({ item, onClick }: { item: MenuItem; onClick: () => void }) {
     >
       <div className="h-40 shrink-0 bg-slate-100 overflow-hidden">
         {item.imageUrl ? (
-          <img
+          <FadeImage
             src={item.imageUrl}
             alt={item.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={e => { (e.target as HTMLImageElement).src = 'https://placehold.co/400x400/f8fafc/cbd5e1?text=No+Image'; }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-300">

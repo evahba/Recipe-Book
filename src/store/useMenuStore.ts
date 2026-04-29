@@ -83,6 +83,7 @@ export interface MenuItem {
 interface MenuStore {
   items: MenuItem[];
   loading: boolean;
+  error: string | null;
   fetchAll: () => Promise<void>;
 }
 
@@ -119,11 +120,13 @@ function fixRecipeUrls(recipe: RecipeData): RecipeData {
   };
 }
 
-export const useMenuStore = create<MenuStore>((set) => ({
+export const useMenuStore = create<MenuStore>((set, get) => ({
   items: [],
   loading: false,
+  error: null,
   fetchAll: async () => {
-    set({ loading: true });
+    if (get().items.length > 0) return;
+    set({ loading: true, error: null });
     try {
       const res = await axios.get(`${API_URL}/api/menu/all`);
       const items: MenuItem[] = (res.data.items || []).map((item: MenuItem) => ({
@@ -132,6 +135,9 @@ export const useMenuStore = create<MenuStore>((set) => ({
         recipe: item.recipe ? fixRecipeUrls(item.recipe) : null,
       }));
       set({ items });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      set({ error: `Failed to load recipes: ${message}` });
     } finally {
       set({ loading: false });
     }

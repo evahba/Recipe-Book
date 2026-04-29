@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMenuStore, type MenuItem } from './store/useMenuStore';
 import { cn } from './lib/utils';
-import { BookOpen, Search, X } from 'lucide-react';
+import { AlertTriangle, BookOpen, Search, X } from 'lucide-react';
 
 const SAUCE_CODES = new Set(['VSM', 'CRCP', 'BRM']);
 
@@ -34,17 +34,37 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export default function RecipeBook() {
-  const { items: allItems, fetchAll, loading } = useMenuStore();
+  const { items: allItems, fetchAll, loading, error } = useMenuStore();
   const [search, setSearch] = useState('');
+  const [excludedAllergens, setExcludedAllergens] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchAll(); }, []);
 
-  const filtered = search.trim()
-    ? allItems.filter(i =>
-        i.title.toLowerCase().includes(search.toLowerCase()) ||
-        i.code.toLowerCase().includes(search.toLowerCase())
-      )
-    : allItems;
+  const allAllergens = useMemo(() => {
+    const set = new Set<string>();
+    allItems.forEach(i => i.allergens?.forEach(a => set.add(a)));
+    return [...set].sort();
+  }, [allItems]);
+
+  const toggleAllergen = (allergen: string) => {
+    setExcludedAllergens(prev => {
+      const next = new Set(prev);
+      next.has(allergen) ? next.delete(allergen) : next.add(allergen);
+      return next;
+    });
+  };
+
+  const q = search.trim().toLowerCase();
+
+  const filtered = allItems.filter(i => {
+    if (excludedAllergens.size > 0 && i.allergens?.some(a => excludedAllergens.has(a))) return false;
+    if (!q) return true;
+    return (
+      i.title.toLowerCase().includes(q) ||
+      i.code.toLowerCase().includes(q) ||
+      i.ingredients?.some(ing => ing.toLowerCase().includes(q))
+    );
+  });
 
   const entreeSubs = ENTREE_SUBS.map(s => ({
     label: s.label,
@@ -64,39 +84,80 @@ export default function RecipeBook() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-white" />
+      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-6 py-4 space-y-3">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-black uppercase tracking-widest text-slate-900 leading-none">Recipe Book</h1>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">{allItems.length} items</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-base font-black uppercase tracking-widest text-slate-900 leading-none">Recipe Book</h1>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">{allItems.length} items</p>
+
+          <div className="ml-auto relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search name, code, ingredient…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-300 focus:bg-white transition-all"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="ml-auto relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-300 focus:bg-white transition-all"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        {allAllergens.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">Exclude allergen:</span>
+            {allAllergens.map(a => {
+              const active = excludedAllergens.has(a);
+              return (
+                <button
+                  key={a}
+                  onClick={() => toggleAllergen(a)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all',
+                    active
+                      ? 'bg-red-600 border-red-600 text-white'
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-red-300 hover:text-red-500'
+                  )}
+                >
+                  {active && <span className="mr-1">✕</span>}{a}
+                </button>
+              );
+            })}
+            {excludedAllergens.size > 0 && (
+              <button
+                onClick={() => setExcludedAllergens(new Set())}
+                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 ml-1"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-14">
         {loading && allItems.length === 0 && (
           <div className="flex items-center justify-center py-32 text-slate-400 text-sm font-bold uppercase tracking-widest">Loading…</div>
         )}
-        {!loading && filtered.length === 0 && (
+
+        {error && (
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-red-50 border border-red-200">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+            <p className="text-sm font-bold text-red-700">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && filtered.length === 0 && (
           <div className="flex items-center justify-center py-32 text-slate-400 text-sm font-bold uppercase tracking-widest">No items found</div>
         )}
 

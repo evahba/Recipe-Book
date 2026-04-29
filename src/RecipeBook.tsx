@@ -160,7 +160,7 @@ export default function RecipeBook() {
             })}
             {excludedAllergens.size > 0 && (
               <button
-                onClick={() => setExcludedAllergens(new Set())}
+                onClick={() => setExcludedAllergens(() => new Set<string>())}
                 className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 ml-1"
               >
                 Clear all

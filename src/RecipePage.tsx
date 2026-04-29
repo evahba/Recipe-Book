@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useMenuStore, type MenuItem, type RecipeData } from './store/useMenuStore';
 import { cn } from './lib/utils';
-import { ArrowLeft, Book, Thermometer, CheckCircle2, XCircle, Timer } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Book, Thermometer, CheckCircle2, XCircle, Timer } from 'lucide-react';
 
 const SAUCE_CODES = new Set(['VSM', 'CRCP', 'BRM']);
 const isSauce = (code: string) => /^S/i.test(code) || SAUCE_CODES.has(code);
+
+function getCategory(code: string): { section: string; sub?: string } {
+  if (/^C/i.test(code) && !SAUCE_CODES.has(code)) return { section: 'Entrées', sub: 'Chicken' };
+  if (/^B/i.test(code) && !SAUCE_CODES.has(code)) return { section: 'Entrées', sub: 'Beef' };
+  if (/^F/i.test(code) && !SAUCE_CODES.has(code)) return { section: 'Entrées', sub: 'Seafood' };
+  if (/^E/i.test(code)) return { section: 'Appetizers' };
+  if (/^[MRV]/i.test(code) && code !== 'VSM') return { section: 'Sides' };
+  if (/^S/i.test(code) || SAUCE_CODES.has(code)) return { section: 'Cooking Sauces' };
+  return { section: 'Other' };
+}
 
 export default function RecipePage({ code }: { code: string }) {
   const { items: allItems, fetchAll } = useMenuStore();
@@ -42,6 +52,11 @@ export default function RecipePage({ code }: { code: string }) {
     );
   }
 
+  const currentIdx = allItems.findIndex(i => i.code.toLowerCase() === code.toLowerCase());
+  const prevItem = currentIdx > 0 ? allItems[currentIdx - 1] : null;
+  const nextItem = currentIdx >= 0 && currentIdx < allItems.length - 1 ? allItems[currentIdx + 1] : null;
+  const category = getCategory(item.code);
+
   const recipe = item.recipe as RecipeData | null;
   const batches = recipe ? Object.keys(recipe.servingsPerBatch || {}).sort((a, b) => {
     if (a === '1/2') return -1; if (b === '1/2') return 1;
@@ -69,7 +84,9 @@ export default function RecipePage({ code }: { code: string }) {
           </div>
           <div>
             <h1 className="text-sm font-black uppercase tracking-widest text-slate-900 leading-none">{item.title}</h1>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">{item.code}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
+              {category.section}{category.sub ? ` · ${category.sub}` : ''} · {item.code}
+            </p>
           </div>
         </div>
       </div>
@@ -79,12 +96,7 @@ export default function RecipePage({ code }: { code: string }) {
         <div className="flex flex-col sm:flex-row gap-8 items-start">
           {item.imageUrl && (
             <div className="w-full sm:w-56 shrink-0 aspect-square rounded-[32px] overflow-hidden bg-slate-100 shadow-lg">
-              <img
-                src={item.imageUrl}
-                alt={item.title}
-                className="w-full h-full object-cover"
-                onError={e => { (e.target as HTMLImageElement).src = 'https://placehold.co/400x400/f8fafc/cbd5e1?text=No+Image'; }}
-              />
+              <FadeImage src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
             </div>
           )}
           <div className="space-y-4 grow">
@@ -136,8 +148,8 @@ export default function RecipePage({ code }: { code: string }) {
           <>
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {!isSauce(item.code) && <StatCard icon={<Thermometer className="w-5 h-5 text-emerald-500" />} value={`${recipe.cookTempF || '--'}°F`} label="Cook Temp" />}
-              {!isSauce(item.code) && <StatCard icon={<Thermometer className="w-5 h-5 text-amber-500" />} value={`${recipe.holdTempF || '--'}°F`} label="Hold Temp" />}
+              {!isSauce(item.code) && !!recipe.cookTempF && <StatCard icon={<Thermometer className="w-5 h-5 text-emerald-500" />} value={`${recipe.cookTempF}°F`} label="Cook Temp" />}
+              {!isSauce(item.code) && !!recipe.holdTempF && <StatCard icon={<Thermometer className="w-5 h-5 text-amber-500" />} value={`${recipe.holdTempF}°F`} label="Hold Temp" />}
               {effectiveBatches.map(b => {
                 const servings = recipe.servingsPerBatch?.[b];
                 if (!servings) return null;
@@ -473,7 +485,69 @@ export default function RecipePage({ code }: { code: string }) {
             )}
           </>
         )}
+
+        {/* Prev / Next navigation */}
+        {(prevItem || nextItem) && (
+          <div className="flex items-stretch gap-4 pt-4 border-t border-slate-100">
+            {prevItem ? (
+              <button
+                onClick={() => { window.location.href = `/recipes/${prevItem.code}`; }}
+                className="flex-1 flex items-center gap-3 p-4 rounded-[24px] border border-slate-200 bg-white hover:border-blue-200 hover:shadow-md transition-all group text-left"
+              >
+                <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-blue-500 shrink-0 transition-colors" />
+                {prevItem.imageUrl && (
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                    <FadeImage src={prevItem.imageUrl} alt={prevItem.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Previous</p>
+                  <p className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">{prevItem.title}</p>
+                </div>
+              </button>
+            ) : <div className="flex-1" />}
+
+            {nextItem ? (
+              <button
+                onClick={() => { window.location.href = `/recipes/${nextItem.code}`; }}
+                className="flex-1 flex items-center gap-3 p-4 rounded-[24px] border border-slate-200 bg-white hover:border-blue-200 hover:shadow-md transition-all group text-right justify-end"
+              >
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next</p>
+                  <p className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">{nextItem.title}</p>
+                </div>
+                {nextItem.imageUrl && (
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                    <FadeImage src={nextItem.imageUrl} alt={nextItem.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-blue-500 shrink-0 transition-colors" />
+              </button>
+            ) : <div className="flex-1" />}
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function FadeImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative w-full h-full">
+      {!loaded && (
+        <div className="absolute inset-0 bg-slate-200 animate-pulse" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={cn(className, 'transition-opacity duration-500', loaded ? 'opacity-100' : 'opacity-0')}
+        onLoad={() => setLoaded(true)}
+        onError={e => {
+          (e.target as HTMLImageElement).src = 'https://placehold.co/400x400/f8fafc/cbd5e1?text=No+Image';
+          setLoaded(true);
+        }}
+      />
     </div>
   );
 }

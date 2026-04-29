@@ -84,7 +84,7 @@ export default function RecipeBook() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-6 py-4 space-y-3">
+      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-6 py-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center">
@@ -112,7 +112,9 @@ export default function RecipeBook() {
             )}
           </div>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-6 py-10 space-y-14">
         {allAllergens.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">Exclude allergen:</span>
@@ -143,9 +145,6 @@ export default function RecipeBook() {
             )}
           </div>
         )}
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-10 space-y-14">
         {loading && allItems.length === 0 && (
           <div className="flex items-center justify-center py-32 text-slate-400 text-sm font-bold uppercase tracking-widest">Loading…</div>
         )}

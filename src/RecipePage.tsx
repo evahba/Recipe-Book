@@ -21,6 +21,7 @@ export default function RecipePage({ code }: { code: string }) {
   const { items: allItems, fetchAll } = useMenuStore();
   const [item, setItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedBatch, setSelectedBatch] = useState<string>('');
 
   useEffect(() => {
     if (allItems.length === 0) {
@@ -37,6 +38,27 @@ export default function RecipePage({ code }: { code: string }) {
       document.title = `${found.title} | PX Recipe Book`;
     }
   }, [allItems, code]);
+
+  const currentIdx = allItems.findIndex(i => i.code.toLowerCase() === code.toLowerCase());
+  const prevItem = currentIdx > 0 ? allItems[currentIdx - 1] : null;
+  const nextItem = currentIdx >= 0 && currentIdx < allItems.length - 1 ? allItems[currentIdx + 1] : null;
+
+  const recipe = item ? item.recipe as RecipeData | null : null;
+  const batches = recipe ? Object.keys(recipe.servingsPerBatch || {}).sort((a, b) => {
+    if (a === '1/2') return -1; if (b === '1/2') return 1;
+    if (a === 'C' || a === 'Catering') return 1; if (b === 'C' || b === 'Catering') return -1;
+    return a.localeCompare(b, undefined, { numeric: true });
+  }) : [];
+
+  const allIngredients = recipe?.sections?.flatMap(s => s.ingredients || []) || [];
+  const allQuantityKeys = [...new Set(allIngredients.flatMap(ing => Object.keys(ing.quantities || {})))];
+  const effectiveBatches = batches.length > 0 ? batches : allQuantityKeys;
+
+  useEffect(() => {
+    if (effectiveBatches.length > 0) {
+      setSelectedBatch(b => effectiveBatches.includes(b) ? b : effectiveBatches[0]);
+    }
+  }, [effectiveBatches.join(',')]);
 
   if (loading) {
     return (
@@ -56,29 +78,7 @@ export default function RecipePage({ code }: { code: string }) {
     );
   }
 
-  const currentIdx = allItems.findIndex(i => i.code.toLowerCase() === code.toLowerCase());
-  const prevItem = currentIdx > 0 ? allItems[currentIdx - 1] : null;
-  const nextItem = currentIdx >= 0 && currentIdx < allItems.length - 1 ? allItems[currentIdx + 1] : null;
   const category = getCategory(item.code);
-
-  const recipe = item.recipe as RecipeData | null;
-  const batches = recipe ? Object.keys(recipe.servingsPerBatch || {}).sort((a, b) => {
-    if (a === '1/2') return -1; if (b === '1/2') return 1;
-    if (a === 'C' || a === 'Catering') return 1; if (b === 'C' || b === 'Catering') return -1;
-    return a.localeCompare(b, undefined, { numeric: true });
-  }) : [];
-
-  const allIngredients = recipe?.sections?.flatMap(s => s.ingredients || []) || [];
-  const allQuantityKeys = [...new Set(allIngredients.flatMap(ing => Object.keys(ing.quantities || {})))];
-  const effectiveBatches = batches.length > 0 ? batches : allQuantityKeys;
-
-  const [selectedBatch, setSelectedBatch] = useState<string>(() => effectiveBatches[0] ?? '');
-
-  useEffect(() => {
-    if (effectiveBatches.length > 0 && !effectiveBatches.includes(selectedBatch)) {
-      setSelectedBatch(effectiveBatches[0]);
-    }
-  }, [effectiveBatches.join(',')]);
 
   const filteredIngredients = allIngredients.filter(ing => {
     if (!ing.quantities) return true;
